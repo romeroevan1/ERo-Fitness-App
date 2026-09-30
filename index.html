@@ -24,6 +24,7 @@ h1{color:var(--acc);font-size:28px;margin:4px 0 2px;letter-spacing:-.02em}.sub{c
 .day.today b{text-decoration:underline}
 .ex{display:flex;gap:10px;align-items:center;padding:11px 0;border-top:1px solid var(--line)}
 .ex input{width:22px;height:22px;accent-color:var(--acc)}.ex span{flex:1}.ex.ck span{text-decoration:line-through;color:var(--mute)}
+.ed{padding:10px 0;border-top:1px solid var(--line);display:flex;flex-wrap:wrap;gap:6px}.ed input{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px;min-width:0}
 button{font:inherit;cursor:pointer}
 .go{width:100%;padding:14px;border:0;border-radius:12px;background:var(--acc);color:var(--onacc);font-weight:700;margin-top:10px}
 .go.off{background:var(--line);color:var(--ink)}
@@ -37,9 +38,9 @@ button{font:inherit;cursor:pointer}
 <div class="card" id="sess"></div>
 <script>
 const LIFT={
-A:["Push + core",[["Bench press","4 × 6–8"],["Overhead press","3 × 8"],["Incline dumbbell press","3 × 10"],["Lateral raise","3 × 12"],["Triceps pushdown","3 × 12"],["Pallof press","3 × 10 / side"],["Dead bug","3 × 10 / side"]]],
-B:["Legs + core",[["Back squat","4 × 6"],["Romanian deadlift","3 × 8"],["Step-up","3 × 10 / leg"],["Hip thrust","3 × 10"],["Calf raise","3 × 15"],["Plank","3 × 45 sec"],["Side plank","2 × 30 sec / side"]]],
-C:["Pull + core",[["Pull-up","4 × max"],["Barbell row","4 × 8"],["Lat pulldown","3 × 10"],["Face pull","3 × 15"],["Biceps curl","3 × 12"],["Hanging knee raise","3 × 12"],["Cable woodchop","3 × 10 / side"],["Back extension","2 × 12"]]]};
+A:["Push + core",[["Incline dumbbell press","4 × 6–8"],["Flat dumbbell press","3 × 8–10"],["Standing dumbbell shoulder press","3 × 8–10"],["Cable lateral raise","3 × 12"],["Cable triceps pushdown","3 × 12"],["Cable Pallof press","3 × 10 / side"],["Dead bug","3 × 10 / side"]]],
+B:["Legs + core",[["Goblet squat (heavy dumbbell)","4 × 8–10"],["Dumbbell Romanian deadlift","4 × 8–10"],["Bulgarian split squat","3 × 8 / leg"],["Dumbbell step-up","3 × 10 / leg"],["Dumbbell hip thrust (on bench)","3 × 10"],["Dumbbell calf raise","3 × 15"],["Plank","3 × 45 sec"],["Side plank","2 × 30 sec / side"]]],
+C:["Pull + core",[["Pull-up or chin-up","4 × max"],["Chest-supported dumbbell row (incline bench)","4 × 8–10"],["Single-arm cable row","3 × 10 / arm"],["Cable face pull","3 × 15"],["Dumbbell hammer curl","3 × 12"],["Hanging knee raise","3 × 12"],["Cable woodchop","3 × 10 / side"],["Bird dog","3 × 8 / side"]]]};
 const D=(y,m,d)=>new Date(y,m-1,d),key=d=>d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
 function plan(dt){
  const wd=dt.getDay(),ph=dt<D(2026,10,5)?"Recovery":dt<D(2026,10,12)?"Easy return":dt<D(2027,1,1)?"Strength block":"Strength + base";
@@ -50,10 +51,11 @@ function plan(dt){
  if(wd==4)return{ph,type:"run",miles:m[1],title:`Run · ${m[1]} mi`,note:light?"Easy pace.":dt<D(2026,11,2)?"Easy, finish with 6 × 20 sec strides.":"Include 2 mi at comfortably hard pace, easy the rest."};
  if(wd==6)return{ph,type:"run",miles:m[2],title:`Long run · ${m[2]} mi`,note:light?"Easy. Stop if anything feels off.":"Easy and steady. Bring fuel if it's hot."};
  const k=wd==1?"A":wd==3?"B":"C";
- return{ph,type:"lift",title:`Lift ${k} · ${LIFT[k][0]}`,note:light?"Light week: 2 sets each, stop 3 reps short of failure.":"Add weight when you hit the top of the rep range on every set.",ex:LIFT[k][1]};
+ return{ph,type:"lift",title:`Lift ${k} · ${LIFT[k][0]}`,note:light?"Light week: 2 sets each, stop 3 reps short of failure.":"Add weight when you hit the top of the rep range on every set.",ex:getEx(k),lk:k};
 }
 let S={done:{},base:756.5};try{S=Object.assign(S,JSON.parse(localStorage.getItem("train")||"{}"))}catch(e){}
 const save=()=>{try{localStorage.setItem("train",JSON.stringify(S))}catch(e){}};
+const getEx=k=>(S.lifts&&S.lifts[k])||LIFT[k][1];let editing=false;
 const today=new Date();today.setHours(0,0,0,0);let cur=new Date(today);
 const $=id=>document.getElementById(id);
 function total(){let t=S.base;for(const k in S.done){const d=D(...k.split("-").map(Number));if(S.done[k].all&&d>=D(2026,10,1)&&d<=D(2026,12,31)){t+=plan(d).miles||0}}return t}
@@ -70,6 +72,16 @@ function render(){
  $("sess").innerHTML=`<div class="big" style="font-size:22px">${p.title}</div><p class="mute">${p.note}</p>`+(p.ex||[]).map((e,i)=>`<label class="ex${st.ex?.[i]?" ck":""}"><input type="checkbox" data-i="${i}" ${st.ex?.[i]?"checked":""}><span>${e[0]}</span><span class="mute" style="flex:none">${e[1]}</span></label>`).join("")+(p.type=="rest"?"":`<button class="go${st.all?" off":""}" id="fin">${st.all?"Done · tap to undo":"Mark workout done"}</button>`);
  document.querySelectorAll(".ex input").forEach(c=>c.onchange=()=>{S.done[k]=S.done[k]||{ex:{}};S.done[k].ex[c.dataset.i]=c.checked;save();render()});
  const f=$("fin");if(f)f.onclick=()=>{S.done[k]=S.done[k]||{ex:{}};S.done[k].all=!S.done[k].all;save();render()};
+ if(p.lk&&!editing){const b=document.createElement("button");b.className="link";b.textContent="Edit exercises";b.onclick=()=>{editing=true;render()};$("sess").appendChild(b)}
+ if(p.lk&&editing)editUI(p.lk);
+}
+function editUI(k){
+ S.lifts=S.lifts||{};const L=S.lifts[k]=S.lifts[k]||LIFT[k][1].map(e=>e.slice()),q=v=>v.replace(/"/g,"&quot;"),el=$("sess");
+ el.innerHTML=`<div class="big" style="font-size:20px">Edit Lift ${k}</div><p class="mute">Changes apply to every Lift ${k} day.</p>`+L.map((e,i)=>`<div class="ed"><input data-i="${i}" data-j="0" value="${q(e[0])}" style="flex:1 1 100%" aria-label="Exercise name"><input data-i="${i}" data-j="1" value="${q(e[1])}" style="flex:1" aria-label="Sets and reps"><button class="link" data-a="up" data-i="${i}">Up</button><button class="link" data-a="dn" data-i="${i}">Down</button><button class="link" data-a="rm" data-i="${i}">Remove</button></div>`).join("")+`<button class="go off" data-a="add">Add exercise</button><button class="go" data-a="done">Done editing</button><button class="link" data-a="reset" style="margin-top:8px">Reset to original</button>`;
+ el.querySelectorAll("input").forEach(x=>x.oninput=()=>{L[x.dataset.i][x.dataset.j]=x.value;save()});
+ el.querySelectorAll("button").forEach(b=>b.onclick=()=>{const a=b.dataset.a,i=+b.dataset.i;
+  if(a=="up"&&i>0)[L[i-1],L[i]]=[L[i],L[i-1]];if(a=="dn"&&i<L.length-1)[L[i+1],L[i]]=[L[i],L[i+1]];
+  if(a=="rm")L.splice(i,1);if(a=="add")L.push(["New exercise","3 × 10"]);if(a=="reset")delete S.lifts[k];if(a=="done")editing=false;save();render()});
 }
 $("prev").onclick=()=>{cur.setDate(cur.getDate()-7);render()};$("next").onclick=()=>{cur.setDate(cur.getDate()+7);render()};$("tod").onclick=()=>{cur=new Date(today);render()};
 render();if("serviceWorker"in navigator)navigator.serviceWorker.register("sw.js");
